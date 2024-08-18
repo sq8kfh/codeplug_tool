@@ -60,4 +60,4 @@ jobs:
     - uses: ncipollo/release-action@v1
       with:
         artifacts: "release.tar.gz,codeplug_tool"
-        bodyFile: "body.md"
+        
