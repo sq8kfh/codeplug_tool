@@ -57,7 +57,12 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
+    - uses: actions/upload-artifact@v2
+      name: Upload codeplug_tool
+      with:
+        path: ${{ github.workspace }}\codeplug_tool
+
     - uses: ncipollo/release-action@v1
       with:
-        artifacts: "release.tar.gz,codeplug_tool"
+        artifacts: "codeplug_tool"
         
