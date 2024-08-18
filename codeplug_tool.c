@@ -1,8 +1,9 @@
 #include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <unistd.h>
-
 
 #define CODEPLUG_SIZE 640
 #define IF_FREQ 44850000
@@ -52,8 +53,6 @@ int decrypt(const uint8_t *buf_in, int16_t size, uint8_t *buf_out)
   if (buf_out[0x10] != 0) {
     iVar2 = ((uint16_t)buf_out[0x10] - (uint16_t)buf_out[9]) + (uint16_t)buf_out[8];
 
-    fprintf(stderr, "%d\n", iVar2);
-
     init_salt(1);
     for (i = 10; i < size; i = i + 1) {
       tmp = buf_out[i];
@@ -76,8 +75,23 @@ uint8_t calc_header_crc(uint8_t *buf) {
   return ~tmp + 1;
 }
 
+uint8_t calc_channels_crc(uint8_t *channel_data) {
+    uint8_t s = channel_data[0] + channel_data[1] + 0;
+    s = ~s + 1;
+    s = ~s + 1;
+
+    for (int i = 3; i < channel_data[1] * 16 + 3; ++i) {
+        s += channel_data[i];
+    }
+
+    return ~s + 1;
+}
+
 void print_channels(uint8_t *channel_data) {
     // Base on MB15A02 datasheet and Motorola R1225 service manual
+
+    uint8_t crc =  calc_channels_crc(channel_data);
+    printf("Channels list CRC: 0x%x, %s\n", crc, crc != channel_data[2] ? "NOT MATCH!" : "match.");
 
     for (int c = 0; c < channel_data[1]; ++c) {
         uint8_t *ch_data = &channel_data[c * 16 + 3];
@@ -117,11 +131,79 @@ void print_channels(uint8_t *channel_data) {
             break;
         }
 
-        printf("CH alias: %d, RX freq: %u Hz, RX filter: %s\n", ch_alias, rx_freq, rx_filter);
+        printf("CH %d, alias: %d%d, RX freq: %u Hz, RX filter: %s\n", c + 1, ch_alias >> 4 & 0x0f, ch_alias & 0x0f, rx_freq, rx_filter);
     }
 }
 
-int process_data(uint8_t *buf_in, int len, char *output_file, int print_ch)
+int set_rx_freq(uint8_t *channel_data, uint8_t ch, uint32_t rx_freq) {
+    uint8_t *ch_data = &channel_data[(ch - 1) * 16 + 3];;
+
+    if ((ch - 1) < channel_data[1]) {
+        fprintf(stderr, "Invalid channel number %u\n", ch);
+        return EXIT_FAILURE;
+    }
+
+    uint32_t tmp = rx_freq - IF_FREQ;
+
+    uint8_t Fosc_div_R = 0;
+
+    if (tmp % 6250 == 0) {
+        Fosc_div_R = 0;
+        tmp = tmp / 6250;
+    }
+    else if (tmp % 5000 == 0) {
+        Fosc_div_R = 1;
+        tmp = tmp / 5000;
+    }
+    else if (tmp % 3750 == 0) {
+        Fosc_div_R = 2;
+        tmp = tmp / 3750;
+    }
+    else if (tmp % 2500 == 0) {
+        Fosc_div_R = 3;
+        tmp = tmp / 2500;
+    }
+    else {
+        fprintf(stderr, "Frequency must be an even multiple of 6.25kHz, 5kHz or 3.75kHz.");
+        return EXIT_FAILURE;
+    }
+    uint32_t N = tmp / PLL_PRESCALER;
+    uint8_t A = tmp - (N * PLL_PRESCALER);
+
+    ch_data[1] = (Fosc_div_R << 6) | (N >> 8 & 0x07);
+    ch_data[2] = N & 0xff;
+    ch_data[3] = A << 1;
+
+    return EXIT_SUCCESS;
+}
+
+int set_rx_filter(uint8_t *channel_data, uint8_t ch, int filter) {
+    uint8_t *ch_data = &channel_data[(ch - 1) * 16 + 3];;
+
+    if ((ch - 1) < channel_data[1]) {
+        fprintf(stderr, "Invalid channel number %u\n", ch);
+        return EXIT_FAILURE;
+    }
+
+    uint8_t f = 0;
+    switch (filter) {
+        case 1:
+            f = 1;
+            break;
+        case 2:
+            f = 2;
+            break;
+        case 3:
+            f = 4;
+            break;
+    }
+
+    ch_data[13] = (ch_data[13] & 0xf4) | (f & 0x0f);
+
+    return EXIT_SUCCESS;
+}
+
+int process_data(uint8_t *buf_in, int len, char *output_file, int print_ch, uint8_t ch_alias, uint32_t rx_freq, int filter)
 {
     uint8_t buf_out[1000];
 
@@ -159,6 +241,18 @@ int process_data(uint8_t *buf_in, int len, char *output_file, int print_ch)
         fclose(fp);
     }
 
+    if (rx_freq && set_rx_freq(&buf_out[0x6c], ch_alias, rx_freq) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
+
+    if (filter && set_rx_filter(&buf_out[0x6c], ch_alias, filter) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
+
+    if (rx_freq || filter) {
+        buf_out[0x6c + 2] = calc_channels_crc(&buf_out[0x6c]);
+    }
+
     if (print_ch) {
         print_channels(&buf_out[0x6c]);
         return EXIT_SUCCESS;
@@ -171,20 +265,42 @@ int process_data(uint8_t *buf_in, int len, char *output_file, int print_ch)
     return EXIT_SUCCESS;
 }
 
+void print_help(FILE * stream) {
+    fprintf(stream, "Motorola Radius R1225 codeplug tool by Kamil Palkowski.\n");
+    fprintf(stream, "The tool allows you to decrypt a codeplug file and set the channel frequency from outside the range.\n");
+    fprintf(stream, "The program can work witch Motorola Radius 1225 series RSS archive files.\n");
+    fprintf(stream, "\n");
+
+    fprintf(stream, "Usage: codeplug_tool [options] codeplug_archive_file\n");
+    fprintf(stream, "       cat codeplug_archive_file | codeplug_tool [options] > decrypted_codeplug_archive_file\n");
+    fprintf(stream, "\n");
+
+    fprintf(stream, "Options:\n");
+    fprintf(stream, "  -c <num>          Select channel to edit.\n");
+    fprintf(stream, "  -f <LO|MED|HI>    Select reception filter\n");
+    fprintf(stream, "  -h                Print this message and exit.\n");
+    fprintf(stream, "  -i                Edit files in-place.\n");
+    fprintf(stream, "  -p                Print channels list and exit.\n");
+    fprintf(stream, "  -r rx_freq        Set rx frequency in Hz.\n");
+}
+
 int main(int argc, char *argv[])
 {
     int in_line = 0;
     int channels_list = 0;
-    char *channel = NULL;
-    char *rx_freq = NULL;
-    char *filter = NULL;
+    uint8_t channel_alias = 0;
+    uint32_t rx_freq = 0;
+    int filter = 0;
 
     int c;
 
     opterr = 0;
 
-    while ((c = getopt(argc, argv, "ipc:r:f:")) != -1)
+    while ((c = getopt(argc, argv, "hipc:r:f:")) != -1)
         switch (c) {
+          case 'h':
+            print_help(stdout);
+            return EXIT_SUCCESS;
           case 'i':
             in_line = 1;
             break;
@@ -192,13 +308,22 @@ int main(int argc, char *argv[])
             channels_list = 1;
             break;
           case 'c':
-            channel = optarg;
+            channel_alias = strtol(optarg, (char **)NULL, 10);
             break;
           case 'r':
-            rx_freq = optarg;
+            rx_freq = strtol(optarg, (char **)NULL, 10);
             break;
           case 'f':
-            filter = optarg;
+            if (strcasecmp(optarg, "lo") == 0)
+                filter = 1;
+            else if (strcasecmp(optarg, "med") == 0)
+                filter = 2;
+            else if (strcasecmp(optarg, "hi") == 0)
+                filter = 3;
+            else {
+                fprintf(stderr, "Option -f requires one of the arguments: LO | MED | HI.\n");
+                return EXIT_FAILURE;
+            }
             break;
           case '?':
             if (optopt == 'c' || optopt == 'r' || optopt == 'f')
@@ -209,7 +334,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
             return EXIT_FAILURE;
           default:
-            //abort ();
+            print_help(stderr);
             return EXIT_FAILURE;
         }
 
@@ -225,7 +350,7 @@ int main(int argc, char *argv[])
             int len = fread(buf_in, sizeof(uint8_t), 1000, fp);
             fclose(fp);
 
-            if (process_data(buf_in, len, in_line ? argv[index] : NULL, channels_list) != EXIT_SUCCESS) {
+            if (process_data(buf_in, len, in_line ? argv[index] : NULL, channels_list, channel_alias, rx_freq, filter) != EXIT_SUCCESS) {
                 fprintf(stderr, "Process file %s fail\n", argv[index]);
                 return EXIT_FAILURE;
             }
@@ -240,7 +365,7 @@ int main(int argc, char *argv[])
             buf_in[len] = ch;
         }
 
-        if (process_data(buf_in, len, NULL, channels_list) != EXIT_SUCCESS) {
+        if (process_data(buf_in, len, NULL, channels_list, channel_alias, rx_freq, filter) != EXIT_SUCCESS) {
             fprintf(stderr, "Process data fail\n");
             return EXIT_FAILURE;
         }
