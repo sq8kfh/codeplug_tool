@@ -60,7 +60,7 @@ jobs:
     - uses: actions/upload-artifact@v2
       name: Upload codeplug_tool
       with:
-        path: ${{ github.workspace }}\codeplug_tool
+        path: ${{ github.workspace }}\build\codeplug_tool
 
     - uses: ncipollo/release-action@v1
       with:
