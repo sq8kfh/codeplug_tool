@@ -56,11 +56,18 @@ jobs:
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Copy file
-      shell: bash
       run: |
         cp ${{ github.workspace }}/README.md ${{ github.workspace }}/build/README.md
         cp ${{ github.workspace }}/LICENSE ${{ github.workspace }}/build/LICENSE
         
+    - name: 'Tar files'
+      run: tar -C ${{ github.workspace }}/build/ -cvzf ${{ github.workspace }}/codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz codeplug_tool* README.md LICENSE
+
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}  
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}/build/
+      
     - uses: actions/upload-artifact@v4
       name: Upload codeplug_tool
       id: artifact-upload-step
@@ -68,10 +75,7 @@ jobs:
         name: codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}
         retention-days: 2
         overwrite: true
-        path: |
-          ${{ github.workspace }}/build/codeplug_tool
-          ${{ github.workspace }}/build/README.md
-          ${{ github.workspace }}/build/LICENSE
+        path:  ${{ github.workspace }}/codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz
 
     - name: Output artifact ID
       run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
@@ -81,15 +85,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Do something
-      run: echo "Do something"
     - uses: actions/download-artifact@v4
-    - name: Display structure of downloaded files
-      run: ls -R 
-    - name: Output wd
-      run:  echo $GITHUB_WORKSPACE
-    - name: Output wd
-      run:  ls -l $GITHUB_WORKSPACE
+      with:
+        merge-multiple: true
     - name: Output wd
       run:  ls -l ${{ github.workspace }}  
     - uses: ncipollo/release-action@v1.14.0
