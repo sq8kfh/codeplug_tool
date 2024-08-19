@@ -63,9 +63,9 @@ jobs:
       with:
         name: codeplug_tool-${{ matrix.os }}
         path: |
-          {{ github.workspace }}/README.md
-          {{ github.workspace }}/LICENSE
           {{ github.workspace }}/build/codeplug_tool
+          {{ github.workspace }}/build/README.md
+          {{ github.workspace }}/build/LICENSE
 
     - name: Output artifact ID
       run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
@@ -73,13 +73,13 @@ jobs:
     - name: Output matrix
       run:  echo 'matrix is ${{ matrix }}'
       
-    # - name: Sh1
-    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-    #   run: ls -l ${{ github.workspace }}/build
+    - name: Sh1
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: ls -l ${{ github.workspace }}/build
 
-    # - name: Sh2
-    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-    #   run: echo $GITHUB_OUTPUT
+    - name: Sh2
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: ls -l ${{ github.workspace }}
 
     - name: Sh3
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
