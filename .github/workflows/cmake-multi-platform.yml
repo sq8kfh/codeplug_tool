@@ -36,13 +36,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
-        
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -62,8 +55,10 @@ jobs:
       id: artifact-upload-step
       with:
         name: codeplug_tool-${{ matrix.os }}
+        retention-days: 2
+        overwrite: true
         path: |
-          ${{ github.workspace }}/build/codeplug_tool*
+          ${{ github.workspace }}/build/codeplug_tool
           ${{ github.workspace }}/README.md
           ${{ github.workspace }}/LICENSE
 
@@ -72,6 +67,21 @@ jobs:
       
     - name: Output matrix
       run:  echo 'matrix is ${{ toJson(matrix) }}'
+
+    - name: Output github
+      run:  echo 'github is ${{ toJson(github) }}'
+
+    - name: Output env
+      run:  echo 'env is ${{ toJson(env) }}'
+
+    - name: Output inputs
+      run:  echo 'inputs is ${{ toJson(inputs) }}'
+
+    - name: Output strategy
+      run:  echo 'strategy is ${{ toJson(strategy) }}'
+      
+    - name: Output runner
+      run:  echo 'runner is ${{ toJson(runner) }}'   
       
     - name: Sh1
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
@@ -80,10 +90,6 @@ jobs:
     - name: Sh2
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: ls -l ${{ github.workspace }}
-
-    - name: Sh3
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: echo $GITHUB_OUTPUT
 
     # - uses: ncipollo/release-action@v1.14.0
     #   with:
