@@ -1,0 +1,96 @@
+name: CMake and release
+
+on:
+  push:
+    tags:
+    - '*'
+    
+permissions:
+  contents: write
+  
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        c_compiler: [gcc, clang]
+        include:
+          - os: ubuntu-latest
+            c_compiler: gcc
+            cpp_compiler: g++
+          - os: macos-latest
+            c_compiler: clang
+            cpp_compiler: clang++
+        exclude:
+          - os: macos-latest
+            c_compiler: gcc
+          - os: ubuntu-latest
+            c_compiler: clang
+            
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+        
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+        -DCMAKE_BUILD_TYPE=Release
+        -S ${{ github.workspace }}
+
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release
+
+    - name: Copy file
+      run: |
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/build/README.md
+        cp ${{ github.workspace }}/LICENSE ${{ github.workspace }}/build/LICENSE
+        
+    - name: 'Tar files'
+      run: cd ${{ github.workspace }}/build/ && tar -cvzf ../codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz codeplug_tool* README.md LICENSE
+
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}  
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}/build/
+      
+    - uses: actions/upload-artifact@v4
+      name: Upload codeplug_tool
+      id: artifact-upload-step
+      with:
+        name: codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}
+        retention-days: 2
+        overwrite: true
+        path:  ${{ github.workspace }}/codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz
+
+    - name: Output artifact ID
+      run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/download-artifact@v4
+      with:
+        merge-multiple: true
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}  
+    - uses: ncipollo/release-action@v1.14.0
+      with:
+        artifacts: ${{ github.workspace }}/*
+        
