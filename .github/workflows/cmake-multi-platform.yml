@@ -53,6 +53,15 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -S ${{ github.workspace }}
 
+    - name: Build
+      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+    - uses: actions/upload-artifact@v2
+      name: Upload codeplug_tool
+      with:
+        path: ${{ github.workspace }}\build\codeplug_tool
+
     - name: Sh1
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: ls -l ${{ github.workspace }}/build
@@ -64,15 +73,6 @@ jobs:
     - name: Sh3
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cat $GITHUB_OUTPUT
-
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-    - uses: actions/upload-artifact@v2
-      name: Upload codeplug_tool
-      with:
-        path: ${{ github.workspace }}\build\codeplug_tool
 
     - uses: ncipollo/release-action@v1.14.0
       with:
