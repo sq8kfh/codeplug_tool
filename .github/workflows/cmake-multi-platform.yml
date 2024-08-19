@@ -61,7 +61,7 @@ jobs:
         cp ${{ github.workspace }}/LICENSE ${{ github.workspace }}/build/LICENSE
         
     - name: 'Tar files'
-      run: tar -C ${{ github.workspace }}/build/ -cvzf ${{ github.workspace }}/codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz codeplug_tool* README.md LICENSE
+      run: tar -C ${{ github.workspace }}/build/ -cvzf codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}.tar.gz ./build/codeplug_tool* ./build/README.md ./build/LICENSE
 
     - name: Output wd
       run:  ls -l ${{ github.workspace }}  
