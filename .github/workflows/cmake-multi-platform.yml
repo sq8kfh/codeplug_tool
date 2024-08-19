@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
 name: CMake on multiple platforms
 
 on:
@@ -67,7 +65,7 @@ jobs:
       name: Upload codeplug_tool
       id: artifact-upload-step
       with:
-        name: codeplug_tool.${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}
+        name: codeplug_tool-${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}
         retention-days: 2
         overwrite: true
         path: |
@@ -78,32 +76,6 @@ jobs:
     - name: Output artifact ID
       run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
       
-    - name: Output matrix
-      run:  echo 'matrix is ${{ toJson(matrix) }}'
-
-    - name: Output github
-      run:  echo 'github is ${{ toJson(github) }}'
-
-    - name: Output env
-      run:  echo 'env is ${{ toJson(env) }}'
-
-    - name: Output inputs
-      run:  echo 'inputs is ${{ toJson(inputs) }}'
-
-    - name: Output strategy
-      run:  echo 'strategy is ${{ toJson(strategy) }}'
-      
-    - name: Output runner
-      run:  echo 'runner is ${{ toJson(runner) }}'   
-      
-    - name: Sh1
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: ls -l ${{ github.workspace }}/build
-
-    - name: Sh2
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: ls -l ${{ github.workspace }}
-
     # - uses: ncipollo/release-action@v1.14.0
     #   with:
     #     artifacts: ${{ github.workspace }}/build/codeplug_tool
