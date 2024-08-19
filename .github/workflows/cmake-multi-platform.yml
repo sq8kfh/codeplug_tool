@@ -75,8 +75,24 @@ jobs:
 
     - name: Output artifact ID
       run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
-      
-    # - uses: ncipollo/release-action@v1.14.0
-    #   with:
-    #     artifacts: ${{ github.workspace }}/build/codeplug_tool
+
+  release:
+    needs: [build]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Do something
+      run: echo "Do something"
+    - uses: actions/download-artifact@v4
+    - name: Display structure of downloaded files
+      run: ls -R 
+    - name: Output wd
+      run:  echo $GITHUB_WORKSPACE
+    - name: Output wd
+      run:  ls -l $GITHUB_WORKSPACE
+    - name: Output wd
+      run:  ls -l ${{ github.workspace }}  
+    - uses: ncipollo/release-action@v1.14.0
+      with:
+        artifacts: ${{ github.workspace }}/*
         
