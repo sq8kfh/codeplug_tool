@@ -57,11 +57,11 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    - name: Copy README.md file
+    - name: Copy file
       shell: bash
       run: |
-        cp ${{ github.workspace }}/README.md" "${{ github.workspace }}/build/README.md"
-        cp ${{ github.workspace }}/LICENSE" "${{ github.workspace }}/build/LICENSE"
+        cp ${{ github.workspace }}/README.md ${{ github.workspace }}/build/README.md
+        cp ${{ github.workspace }}/LICENSE ${{ github.workspace }}/build/LICENSE
         
     - uses: actions/upload-artifact@v4
       name: Upload codeplug_tool
