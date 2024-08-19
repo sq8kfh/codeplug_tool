@@ -58,16 +58,10 @@ jobs:
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
     - name: Copy README.md file
-      uses: canastro/copy-file-action@master
-      with:
-        source: "${{ github.workspace }}/README.md"
-        target: "${{ github.workspace }}/build/README.md"
-        
-    - name: Copy LICENSE file
-      uses: canastro/copy-file-action@master
-      with:
-        source: "${{ github.workspace }}/LICENSE"
-        target: "${{ github.workspace }}/build/LICENSE"
+      shell: bash
+      run: |
+        cp ${{ github.workspace }}/README.md" "${{ github.workspace }}/build/README.md"
+        cp ${{ github.workspace }}/LICENSE" "${{ github.workspace }}/build/LICENSE"
         
     - uses: actions/upload-artifact@v4
       name: Upload codeplug_tool
