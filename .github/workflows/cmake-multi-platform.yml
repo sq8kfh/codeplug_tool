@@ -61,13 +61,13 @@ jobs:
       name: Upload codeplug_tool
       id: artifact-upload-step
       with:
-        name: codeplug_tool-${{ matrix.os }}
+        name: codeplug_tool.${{ github.ref_name }}-${{ runner.os }}.${{ runner.arch }}
         retention-days: 2
         overwrite: true
         path: |
           ${{ github.workspace }}/build/codeplug_tool
-          ${{ github.workspace }}/README.md
-          ${{ github.workspace }}/LICENSE
+          ${{ github.workspace }}/build/../README.md
+          ${{ github.workspace }}/build/../LICENSE
 
     - name: Output artifact ID
       run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
