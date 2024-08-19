@@ -57,37 +57,29 @@ jobs:
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
-    - uses: actions/upload-artifact@v4
-      name: Upload codeplug_tool
-      id: artifact-upload-step
-      with:
-        name: codeplug_tool-${{ matrix.os }}-${{ matrix.version }}
-        path: ${{ github.workspace }}/build/codeplug_tool
+    # - uses: actions/upload-artifact@v4
+    #   name: Upload codeplug_tool
+    #   id: artifact-upload-step
+    #   with:
+    #     name: codeplug_tool-${{ matrix.os }}-${{ matrix.version }}
+    #     path: ${{ github.workspace }}/build/codeplug_tool
 
-    - name: Output artifact ID
-      run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
+    # - name: Output artifact ID
+    #   run:  echo 'Artifact ID is ${{ steps.artifact-upload-step.outputs.artifact-id }}'
 
-    - name: Sh1
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: ls -l ${{ github.workspace }}/build
+    # - name: Sh1
+    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+    #   run: ls -l ${{ github.workspace }}/build
 
-    - name: Sh2
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: echo $GITHUB_OUTPUT
+    # - name: Sh2
+    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+    #   run: echo $GITHUB_OUTPUT
 
-    - name: Sh3
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cat $GITHUB_OUTPUT
+    # - name: Sh3
+    #   # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+    #   run: cat $GITHUB_OUTPUT
 
     - uses: ncipollo/release-action@v1.14.0
       with:
         artifacts: ${{ github.workspace }}/build/codeplug_tool
-        
-    - uses: ncipollo/release-action@v1.14.0
-      with:
-        artifacts: codeplug_tool.zip
-        
-    - uses: ncipollo/release-action@v1.14.0
-      with:
-        artifacts: ${{ steps.artifact-upload-step.outputs.artifact-id }}'
         
